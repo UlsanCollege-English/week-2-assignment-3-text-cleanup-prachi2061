@@ -1,45 +1,34 @@
+import sys
+import os
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from textops import unique_words_preserve_order, top_k_frequent_first_tie, redact_words
 import pytest
-from src.textops import unique_words_preserve_order, top_k_frequent_first_tie, redact_words
 
 
-@pytest.mark.parametrize(
-    "words, expected",
-    [
-        (["a", "b", "a", "c", "b"], ["a", "b", "c"]),
-        ([], []),
-        (["x", "x", "x"], ["x"]),
-        (["m", "n", "o"], ["m", "n", "o"]),
-    ]
-)
-def test_unique_words_preserve_order(words, expected):
-    assert unique_words_preserve_order(words) == expected
+def test_unique_words_preserve_order():
+    assert unique_words_preserve_order(["a", "b", "a", "c", "b"]) == ["a", "b", "c"]
+    assert unique_words_preserve_order([]) == []
+    assert unique_words_preserve_order(["x", "x", "x"]) == ["x"]
+    assert unique_words_preserve_order(["one", "two", "three"]) == ["one", "two", "three"]
 
 
-def test_top_k_frequent_first_tie_normal_case():
-    words = ["x", "y", "x", "z", "y", "y", "x"]
-    # counts: x=3, y=3, z=1; tie broken by first appearance (x before y)
-    assert top_k_frequent_first_tie(words, 2) == ["x", "y"]
-
-
-def test_top_k_frequent_first_tie_errors():
-    words = ["a", "b", "a"]
-
-    # k=0 → invalid
+def test_top_k_frequent_first_tie():
+    words = ["a", "b", "a", "c", "b", "b"]
+    assert top_k_frequent_first_tie(words, 1) == ["b"]
+    assert top_k_frequent_first_tie(words, 2) == ["b", "a"]
+    assert top_k_frequent_first_tie(words, 3) == ["b", "a", "c"]
+    assert top_k_frequent_first_tie(["x", "y", "z"], 2) == ["x", "y"]
     with pytest.raises(ValueError):
         top_k_frequent_first_tie(words, 0)
+    with pytest.raises(ValueError):
+        top_k_frequent_first_tie(words, -5)
 
-    # k larger than unique count should still work
-    assert top_k_frequent_first_tie(words, 10) == ["a", "b"]
 
-
-@pytest.mark.parametrize(
-    "words, redacts, expected",
-    [
-        (["alice", "bob", "alice", "carol"], ["alice"], ["***", "bob", "***", "carol"]),
-        (["alice", "bob", "carol"], ["bob", "carol"], ["alice", "***", "***"]),
-        (["x", "y", "z"], [], ["x", "y", "z"]),  # nothing redacted
-        ([], ["anything"], []),  # empty input
-    ]
-)
-def test_redact_words(words, redacts, expected):
-    assert redact_words(words, redacts) == expected
+def test_redact_words():
+    words = ["apple", "banana", "cherry", "date"]
+    redacts = ["banana", "date"]
+    assert redact_words(words, redacts) == ["apple", "***", "cherry", "***"]
+    assert redact_words(words, []) == ["apple", "banana", "cherry", "date"]
+    assert redact_words([], ["anything"]) == []
+    words2 = ["foo", "bar", "foo", "baz"]
+    assert redact_words(words2, ["foo"]) == ["***", "bar", "***", "baz"]

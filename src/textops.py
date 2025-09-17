@@ -1,6 +1,7 @@
 from collections import Counter
 from typing import List
 
+
 def unique_words_preserve_order(words: List[str]) -> List[str]:
     """Return a list of unique words in the order of their first appearance."""
     seen = set()
